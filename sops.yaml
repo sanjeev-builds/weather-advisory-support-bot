@@ -1,0 +1,490 @@
+# ==============================================================================
+# Standard Operating Procedures (SOPs) — Weather Advisory Bot
+# ==============================================================================
+#
+# WHY YAML: SOPs are data, not code. A product manager or safety officer should
+# be able to add, edit, or remove a policy by editing this file alone — no
+# Python, no redeployment of logic. YAML is human-readable, diff-friendly,
+# and supports the structured fields we need (conditions, thresholds, guidance
+# templates). Adding an 11th (or 111th) SOP is: open this file, paste a new
+# block, save. Zero code changes required.
+#
+# HOW MATCHING WORKS:
+#   - "threshold" SOPs: matched deterministically in code (weather_value op threshold)
+#   - "composite" SOPs: the LLM is given the SOP's written criteria + live weather
+#     data and asked to classify whether the SOP applies. The LLM does NOT invent
+#     advice — it only decides "applies" or "does not apply" against criteria we wrote.
+#
+# MULTI-MATCH RESOLUTION: When multiple SOPs match, ALL are surfaced in the
+# response, ranked by severity (critical > high > moderate > low). Hiding a
+# relevant safety warning is worse than being verbose.
+# ==============================================================================
+
+# ==============================================================================
+# CATEGORY: Outdoor Exercise
+# ==============================================================================
+
+- id: "SOP-001"
+  name: "Extreme UV — Outdoor Exercise"
+  category: "outdoor_exercise"
+  severity: "high"
+  type: "threshold"
+  conditions:
+    - field: "uv_index"
+      operator: ">="
+      threshold: 8
+  activity_keywords:
+    - "exercise"
+    - "run"
+    - "running"
+    - "jog"
+    - "jogging"
+    - "walk"
+    - "walking"
+    - "hike"
+    - "hiking"
+    - "cycle"
+    - "cycling"
+    - "bike"
+    - "biking"
+    - "sport"
+    - "workout"
+    - "outdoor"
+    - "play"
+    - "trek"
+    - "trekking"
+  guidance: >
+    The current UV index at your location is {uv_index}, which is classified as
+    "very high" by WHO standards. Prolonged unprotected exposure at this level
+    significantly increases the risk of sunburn, heat exhaustion, and long-term
+    skin damage. Avoid outdoor exercise between 11 AM and 4 PM. If you must be
+    outside, apply SPF 50+ sunscreen, wear a hat and UV-protective clothing,
+    and stay hydrated. Consider rescheduling to early morning (before 8 AM) or
+    evening (after 6 PM).
+  source_note: "WHO UV Index Scale — 'Very High' is 8-10"
+
+- id: "SOP-002"
+  name: "High Wind — Cycling and Two-Wheelers"
+  category: "outdoor_exercise"
+  severity: "high"
+  type: "threshold"
+  conditions:
+    - field: "wind_speed_10m"
+      operator: ">="
+      threshold: 40
+  activity_keywords:
+    - "cycle"
+    - "cycling"
+    - "bike"
+    - "biking"
+    - "bicycle"
+    - "two-wheeler"
+    - "scooter"
+    - "motorcycle"
+    - "motorbike"
+    - "moped"
+    - "ride"
+    - "scooty"
+  guidance: >
+    Wind speed at your location is currently {wind_speed_10m} km/h. Winds above
+    40 km/h pose a direct safety risk — not just discomfort — for cyclists and
+    two-wheeler riders. Crosswinds can cause loss of control, and gusts may push
+    you into traffic. This is a safety issue, not a comfort issue. Postpone your
+    ride or switch to an enclosed vehicle or public transport.
+  source_note: "Beaufort Scale — Force 8 (Fresh Gale) begins at 39 km/h"
+
+- id: "SOP-003"
+  name: "Extreme Heat — Heat Stroke Risk"
+  category: "outdoor_exercise"
+  severity: "critical"
+  type: "threshold"
+  conditions:
+    - field: "temperature_2m"
+      operator: ">="
+      threshold: 40
+  activity_keywords:
+    - "exercise"
+    - "run"
+    - "jog"
+    - "walk"
+    - "hike"
+    - "cycle"
+    - "sport"
+    - "workout"
+    - "outdoor"
+    - "play"
+    - "trek"
+    - "marathon"
+    - "cricket"
+    - "football"
+  guidance: >
+    The temperature at your location is {temperature_2m}°C, which puts you in
+    the extreme heat zone. At this temperature, vigorous outdoor activity
+    carries a serious risk of heat stroke, which can be life-threatening.
+    All non-essential outdoor physical activity should be avoided. If you must
+    be outside, limit exposure to under 15 minutes, carry water, and watch for
+    symptoms: dizziness, nausea, rapid heartbeat, or stopping sweating despite
+    heat. Seek air-conditioned shelter immediately if symptoms appear.
+  source_note: "CDC Heat Safety guidelines — Extreme Danger above 40°C"
+
+- id: "SOP-004"
+  name: "Cold Wind Chill — Hypothermia Risk"
+  category: "outdoor_exercise"
+  severity: "moderate"
+  type: "threshold"
+  conditions:
+    - field: "apparent_temperature"
+      operator: "<="
+      threshold: 5
+  activity_keywords:
+    - "exercise"
+    - "run"
+    - "jog"
+    - "walk"
+    - "hike"
+    - "cycle"
+    - "outdoor"
+    - "trek"
+    - "morning walk"
+    - "play"
+  guidance: >
+    The feels-like temperature at your location is {apparent_temperature}°C,
+    factoring in wind chill. Below 5°C, prolonged exposure increases the risk
+    of hypothermia and frostbite on exposed skin. If you choose to go out, wear
+    layered clothing, cover extremities (hands, ears, nose), and limit time
+    outdoors. Warm up indoors before and after. Consider indoor exercise as
+    a safer alternative.
+  source_note: "NWS Wind Chill guidelines"
+
+# ==============================================================================
+# CATEGORY: Travel and Commute
+# ==============================================================================
+
+- id: "SOP-005"
+  name: "High Precipitation Probability — Travel Delays"
+  category: "travel"
+  severity: "moderate"
+  type: "threshold"
+  conditions:
+    - field: "precipitation_probability"
+      operator: ">="
+      threshold: 70
+  activity_keywords:
+    - "travel"
+    - "commute"
+    - "drive"
+    - "driving"
+    - "road"
+    - "trip"
+    - "journey"
+    - "flight"
+    - "airport"
+    - "train"
+    - "bus"
+    - "office"
+    - "work"
+    - "school"
+  guidance: >
+    Precipitation probability at your location is {precipitation_probability}%.
+    High-probability rain events frequently cause traffic slowdowns, waterlogging
+    on roads, and delays to public transport. Plan extra travel time, check for
+    local flood or traffic alerts before departing, and carry rain gear. If
+    your travel is flexible, consider delaying until the probability drops.
+  source_note: "General travel safety guidance for wet-weather commuting"
+
+- id: "SOP-006"
+  name: "Dangerous Wind Gusts — Travel Safety"
+  category: "travel"
+  severity: "high"
+  type: "threshold"
+  conditions:
+    - field: "wind_gusts_10m"
+      operator: ">="
+      threshold: 60
+  activity_keywords:
+    - "travel"
+    - "drive"
+    - "driving"
+    - "commute"
+    - "road"
+    - "trip"
+    - "fly"
+    - "flight"
+    - "highway"
+    - "bridge"
+  guidance: >
+    Wind gusts at your location are reaching {wind_gusts_10m} km/h. At this
+    level, gusts can destabilize high-profile vehicles, blow debris onto roads,
+    and make bridges and overpasses hazardous. Avoid non-essential travel,
+    especially on highways and elevated roads. If already driving, reduce speed,
+    grip the wheel firmly, and be alert for sudden crosswinds. Flight delays
+    or diversions are also possible at these gust levels.
+  source_note: "Beaufort Scale Force 10+ / NDMA wind advisory guidelines"
+
+- id: "SOP-007"
+  name: "Heavy Rainfall — Waterlogging and Flood Risk"
+  category: "travel"
+  severity: "critical"
+  type: "threshold"
+  conditions:
+    - field: "precipitation"
+      operator: ">="
+      threshold: 7.5
+  activity_keywords:
+    - "travel"
+    - "commute"
+    - "drive"
+    - "driving"
+    - "road"
+    - "trip"
+    - "walk"
+    - "outdoor"
+    - "go out"
+    - "leave"
+    - "office"
+    - "work"
+  guidance: >
+    Rainfall at your location is currently {precipitation} mm/hr, which is
+    classified as heavy rain. Heavy rainfall at this rate causes rapid water
+    accumulation on roads, urban waterlogging, reduced visibility, and
+    significantly increases the risk of accidents and flash flooding. Avoid all
+    non-essential travel. Do not drive through standing water — it only takes
+    15 cm of moving water to knock you off your feet and 60 cm to float a car.
+    If you are already outside, seek shelter immediately and wait for conditions
+    to improve.
+  source_note: "IMD rainfall classification — Heavy rain is 64.5-115.5 mm/day (~7.5+ mm/hr sustained)"
+
+# ==============================================================================
+# CATEGORY: Vulnerable Groups (Children, Elderly, Pets)
+# ==============================================================================
+
+- id: "SOP-008"
+  name: "Heat Risk — Children, Elderly, and Pets"
+  category: "vulnerable_groups"
+  severity: "high"
+  type: "threshold"
+  conditions:
+    - field: "temperature_2m"
+      operator: ">="
+      threshold: 35
+  activity_keywords:
+    - "child"
+    - "children"
+    - "kid"
+    - "kids"
+    - "baby"
+    - "toddler"
+    - "infant"
+    - "elderly"
+    - "senior"
+    - "old"
+    - "grandma"
+    - "grandmother"
+    - "grandpa"
+    - "grandfather"
+    - "grandparent"
+    - "parent"
+    - "pet"
+    - "dog"
+    - "cat"
+    - "puppy"
+    - "park"
+    - "playground"
+  guidance: >
+    The temperature at your location is {temperature_2m}°C. Children under 5,
+    adults over 65, and pets are significantly more vulnerable to heat-related
+    illness because their bodies regulate temperature less efficiently. At 35°C
+    and above: keep children and elderly indoors in cool environments, ensure
+    frequent hydration, never leave anyone (including pets) in parked vehicles,
+    and avoid outdoor play between 11 AM and 4 PM. Walk dogs only in early
+    morning or late evening — hot pavement can burn paw pads.
+  source_note: "WHO Heat-Health guidelines for vulnerable populations"
+
+- id: "SOP-009"
+  name: "Moderate UV — Children and Elderly Skin Protection"
+  category: "vulnerable_groups"
+  severity: "moderate"
+  type: "threshold"
+  conditions:
+    - field: "uv_index"
+      operator: ">="
+      threshold: 6
+  activity_keywords:
+    - "child"
+    - "children"
+    - "kid"
+    - "kids"
+    - "baby"
+    - "toddler"
+    - "elderly"
+    - "senior"
+    - "grandma"
+    - "grandfather"
+    - "park"
+    - "playground"
+    - "school"
+    - "recess"
+    - "outing"
+  guidance: >
+    The UV index at your location is {uv_index}, which is "high" on the WHO
+    scale. Children and elderly individuals have more sensitive skin and are at
+    greater risk of UV damage even at moderate-to-high levels. Apply SPF 30+
+    sunscreen, ensure hats and protective clothing, and limit direct sun exposure.
+    Seek shade during peak UV hours (10 AM – 3 PM). This is not an emergency,
+    but precautions are important for these groups.
+  source_note: "WHO UV Index — 'High' is 6-7, extra protection for sensitive groups"
+
+- id: "SOP-010"
+  name: "Thunderstorm Active — All Outdoor Activity"
+  category: "vulnerable_groups"
+  severity: "critical"
+  type: "threshold"
+  conditions:
+    - field: "weather_code"
+      operator: "in"
+      threshold: [95, 96, 99]
+  activity_keywords:
+    - "outdoor"
+    - "outside"
+    - "park"
+    - "play"
+    - "walk"
+    - "exercise"
+    - "sport"
+    - "hike"
+    - "cycle"
+    - "travel"
+    - "commute"
+    - "swim"
+    - "pool"
+    - "beach"
+    - "picnic"
+    - "garden"
+    - "field"
+    - "run"
+    - "jog"
+    - "trek"
+    - "child"
+    - "children"
+    - "kid"
+    - "pet"
+    - "dog"
+    - "elderly"
+  guidance: >
+    A thunderstorm is currently active at your location (weather code: {weather_code}).
+    Thunderstorms bring lightning, sudden heavy downpours, strong gusts, and
+    possible hail. Lightning is the primary danger — it kills more people annually
+    in India than any other natural hazard. ALL outdoor activities should stop
+    immediately. Move indoors to a substantial building (not a shed or open
+    shelter). Avoid open fields, hilltops, water bodies, and tall isolated
+    objects. Do not resume outdoor activity until 30 minutes after the last
+    thunder or lightning.
+  source_note: "NDMA Thunderstorm Safety Guidelines / 30-30 Lightning Rule"
+
+# ==============================================================================
+# CATEGORY: General / Composite Assessments
+# ==============================================================================
+
+- id: "SOP-011"
+  name: "Picnic and Leisure Suitability — Composite Assessment"
+  category: "general"
+  severity: "variable"
+  type: "composite"
+  description: >
+    This SOP covers fuzzy, non-numeric questions like "is today good for a
+    picnic?" where no single threshold decides the answer. Instead, the
+    assessment considers multiple factors together.
+  composite_criteria:
+    favorable:
+      - "Temperature between 18°C and 32°C"
+      - "Precipitation probability below 30%"
+      - "Wind speed below 25 km/h"
+      - "UV index below 7"
+      - "No active thunderstorm (weather code not 95, 96, 99)"
+      - "Cloud cover below 80%"
+    unfavorable_factors:
+      - "Temperature above 35°C or below 10°C"
+      - "Precipitation probability above 60%"
+      - "Active precipitation above 1 mm/hr"
+      - "Wind speed above 30 km/h"
+      - "UV index above 8 (without shade plan)"
+      - "Thunderstorm active or forecasted"
+    assessment_rule: >
+      If ALL favorable conditions are met, advise that conditions are good for a
+      picnic. If 1-2 unfavorable factors are present, advise caution with
+      specific mitigations (e.g., "bring sunscreen" for high UV, "have a backup
+      indoor plan" for moderate rain chance). If 3+ unfavorable factors are
+      present or any single critical factor (thunderstorm, extreme heat, heavy
+      rain) is present, advise against it.
+  activity_keywords:
+    - "picnic"
+    - "leisure"
+    - "outing"
+    - "barbecue"
+    - "bbq"
+    - "outdoor dining"
+    - "family outing"
+    - "day out"
+    - "beach"
+    - "park"
+    - "garden party"
+    - "outdoor event"
+    - "gathering"
+    - "birthday party outdoor"
+    - "nice day"
+    - "good day"
+    - "pleasant"
+    - "enjoy"
+  guidance_template:
+    favorable: >
+      Current conditions at your location look good for a picnic/outdoor leisure:
+      temperature is {temperature_2m}°C, precipitation chance is {precipitation_probability}%,
+      wind is {wind_speed_10m} km/h, and UV index is {uv_index}. Enjoy your time
+      outdoors! Basic sun protection is always a good idea.
+    caution: >
+      Conditions are mixed for outdoor leisure at your location. While some factors
+      are OK ({favorable_summary}), be aware of: {unfavorable_summary}. You can
+      still go, but plan accordingly — {specific_mitigations}.
+    advise_against: >
+      Current conditions at your location are not suitable for a picnic or extended
+      outdoor leisure. Issues: {unfavorable_summary}. Consider postponing or
+      choosing an indoor alternative.
+  source_note: "Composite assessment — no single external standard; criteria designed for general comfort and safety"
+
+- id: "SOP-012"
+  name: "Severe Weather System — Universal High Alert"
+  category: "general"
+  severity: "critical"
+  type: "composite"
+  override: true  # always leads the reply and is evaluated regardless of activity category
+  description: >
+    This SOP handles the case where a severe weather system (heavy rain +
+    strong winds + extended precipitation) makes ALL outdoor activities
+    dangerous, regardless of specific category. The individual numbers might
+    not each cross a threshold on their own, but the combination signals a
+    serious weather event (like a monsoon low-pressure system or cyclonic
+    circulation). This is the "bigger than any single threshold" case.
+  composite_criteria:
+    trigger_conditions:
+      - "Precipitation is above 4 mm/hr AND wind speed is above 25 km/h"
+      - "OR precipitation probability is above 80% AND wind gusts are above 45 km/h"
+      - "OR weather code indicates moderate-to-heavy rain (codes 61, 63, 65, 80, 81, 82) AND wind gusts above 40 km/h"
+      - "OR thunderstorm active (95, 96, 99) AND precipitation above 2 mm/hr"
+    assessment_rule: >
+      If ANY of the trigger condition combinations is met, this SOP activates
+      and overrides category-specific SOPs. Lead with the weather system itself
+      before any activity-specific advice. ALL outdoor activities should be
+      treated as high-severity regardless of what the user specifically asked
+      about.
+  activity_keywords: []  # Empty = matches ANY outdoor activity question
+  guidance: >
+    Your location is currently experiencing a severe weather event: precipitation
+    is {precipitation} mm/hr with winds at {wind_speed_10m} km/h (gusts up to
+    {wind_gusts_10m} km/h) and {precipitation_probability}% chance of continued
+    rain. This combination of heavy rain and strong winds affects ALL outdoor
+    activities — not just the one you asked about. Conditions like these are
+    typical of an active monsoon low-pressure system or similar weather
+    disturbance. Stay indoors, avoid all non-essential outdoor exposure, and
+    monitor local weather updates. This advisory applies until conditions
+    demonstrably improve.
+  source_note: "IMD severe weather classification — composite trigger for system-level events"
